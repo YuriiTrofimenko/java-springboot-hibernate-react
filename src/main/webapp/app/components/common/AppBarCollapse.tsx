@@ -1,5 +1,5 @@
 import React, {Component} from "react"
-import {Button, MenuItem, WithStyles} from "@material-ui/core"
+import {Button, Icon, MenuItem, Toolbar, WithStyles} from "@material-ui/core"
 import { withStyles } from "@material-ui/core/styles"
 import ButtonAppBarCollapse from "./ButtonAppBarCollapse"
 import {
@@ -7,9 +7,14 @@ import {
     Route,
     NavLink
 } from 'react-router-dom'
+import {inject, observer} from "mobx-react";
+import {CartStore} from "../../stores/CartStore"
+import {UserStore} from '../../stores/UserStore'
 
 interface IProps extends WithStyles<typeof styles> {
-    routes: any
+    routes: any,
+    cartStore: CartStore,
+    userStore: UserStore
 }
 
 interface IState {
@@ -26,10 +31,11 @@ const styles = theme => ({
         },
         margin: "10px",
         paddingLeft: "16px",
-        right: 0,
+        right: "10px",
         position: "relative",
         width: "100%",
         background: "transparent",
+        display: "inline"
     },
     buttonBarItem: {
         webkitTransition: 'background-color .3s',
@@ -48,13 +54,28 @@ const styles = theme => ({
     },
     mobileButtonBarItemActive: {
         backgroundColor: '#ccc',
+    },
+    shoppingCart: {
+        marginRight: '10px'
     }
 })
 
+@inject('cartStore', 'userStore')
+@observer
 class AppBarCollapse extends Component<IProps, IState> {
+
     constructor(props) {
         super(props)
     }
+
+    handleCartIconClick = (e) => {
+        if (this.props.cartStore.cartShown) {
+            this.props.cartStore.setCartVisibility(false)
+        } else {
+            this.props.cartStore.setCartVisibility(true)
+        }
+    }
+
     render() {
         const { classes } = this.props
         const { routes } = this.props
@@ -117,6 +138,13 @@ class AppBarCollapse extends Component<IProps, IState> {
                             return ''
                         }
                     })}
+                </div>
+                <div className={classes.shoppingCart} style={{display: this.props.userStore.user ? 'inline' : 'none' }}>
+                    <Icon
+                        onClick={this.handleCartIconClick}
+                        >
+                        shopping_cart
+                    </Icon> {this.props.cartStore.cartItemsCount} ({this.props.cartStore.cartItemsTotalPrice})
                 </div>
             </div>
         )

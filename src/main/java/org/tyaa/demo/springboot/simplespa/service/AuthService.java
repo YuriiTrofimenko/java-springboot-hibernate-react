@@ -128,7 +128,7 @@ public class AuthService {
             response.setMessage(String.format("User %s Signed In", userModel.name));
             response.setData(userModel);
         } else {
-            response.setStatus(ResponseModel.FAIL_STATUS);
+            response.setStatus(ResponseModel.SUCCESS_STATUS);
             response.setMessage("User is a Guest");
         }
         return response;

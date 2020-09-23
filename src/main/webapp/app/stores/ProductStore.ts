@@ -92,7 +92,6 @@ class ProductStore {
             this.categories =
                 this.categories.filter(categoryId => categoryId !== id)
         }
-        console.log(this.categories)
         // запрос на бэкенд для получения списка моделей товаров
         // согласно новому состоянию фильтра (набора свойств локального хранилища
         // для фильтрации)

@@ -9,6 +9,7 @@ import org.tyaa.demo.springboot.simplespa.model.CartItem;
 import org.tyaa.demo.springboot.simplespa.model.ResponseModel;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -32,30 +33,42 @@ public class CartService {
         Product product = productDAO.findById(productId).get();
         // в объекте корзины пытаемся найти элемент списка товаров в корзине,
         // у которого ИД описания товара такой же, как заданный для изменения
-        List<CartItem> currentCartItemList =
+        Optional<CartItem> currentCartItemOptional =
                 cart.getCartItems()
                         .stream()
-                        .filter((item) -> item.getId().equals(productId))
-                        .collect(Collectors.toList());
+                        .filter((item) -> item.getProductId().equals(productId))
+                        .findFirst();
+        System.out.println(productId);
+        System.out.println(currentCartItemOptional);
+        System.out.println(currentCartItemOptional.isPresent());
         // если в корзине уже был хотя бы один такой товар
-        if (currentCartItemList.size() > 0) {
-            currentCartItem = currentCartItemList.get(0);
+        if (currentCartItemOptional.isPresent()) {
+            currentCartItem = currentCartItemOptional.get();
+            System.out.println(currentCartItem);
         } else {
-            // если нет - добавляем товар в корзину с указанием его числа 0
-            currentCartItem = new CartItem(productId, product.getName(), 0);
+            // если нет - добавляем товар в корзину с указанием его количества равным 0
+            currentCartItem =
+                    CartItem.builder()
+                    .productId(productId)
+                    .name(product.getName())
+                    .price(product.getPrice())
+                    .quantity(0)
+                    .build();
             cart.getCartItems().add(currentCartItem);
         }
         if (action != null) {
             switch (action) {
                 case ADD:
                     // увеличение числа товара в корзтине на 1
-                    currentCartItem.setCount(currentCartItem.getCount() + 1);
+                    System.out.println(currentCartItem.getQuantity());
+                    currentCartItem.setQuantity(currentCartItem.getQuantity() + 1);
+                    System.out.println(currentCartItem.getQuantity());
                     break;
                 case SUB:
                     // уменьшение числа товара в корзтине на 1,
                     // но если осталось 0 или меньше - полное удаление товара из корзины
-                    currentCartItem.setCount(currentCartItem.getCount() - 1);
-                    if (currentCartItem.getCount() <= 0) {
+                    currentCartItem.setQuantity(currentCartItem.getQuantity() - 1);
+                    if (currentCartItem.getQuantity() <= 0) {
                         cart.getCartItems().remove(currentCartItem);
                     }
                     break;

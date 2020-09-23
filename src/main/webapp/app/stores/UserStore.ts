@@ -13,6 +13,8 @@ class UserStore {
     // password input
     @observable password: string = ''
 
+
+
     @action setUser(user: User) {
         this.user = user
     }
@@ -30,14 +32,47 @@ class UserStore {
         this.password = ''
     }
 
+    // запрос на конечную точку рест-контроллера аутентификации
+    // для проверки наличия веб-сеанса
+    // и для получения сведений о текущем пользователе
+    @action check () {
+        // сброс текста возможной предыдущей ошибки
+        commonStore.clearError()
+        // включение анимации ожидания
+        commonStore.setLoading(true)
+
+        fetch('api/auth/user/check', {
+            method: 'GET'
+        }).then((response) => {
+            // из полученного отклика сервера извлечь тело - json-string,
+            // преобразовать в json-object
+            // и передать для дальнейшей обработки
+            return response.json()
+        }).then((response) => {
+            // если объект отклика сервера получен
+            if (response) {
+                if (response.status === 'success') {
+                    if (response.data) {
+                        this.user = new User(response.data.name, response.data.roleName)
+                    }
+                } else if (response.status === 'fail') {
+                    // установка в переменную хранилища сообщения об ошибке
+                    commonStore.setError(response.message)
+                }
+            }
+        }).catch((error) => {
+            // установка в переменную хранилища сообщения об ошибке
+            commonStore.setError(error.message)
+            // перевыброс объекта аргументов исключения
+            throw error
+        })
+    }
+
     @action login () {
         // сброс текста возможной предыдущей ошибки
         commonStore.clearError()
         // включение анимации ожидания
         commonStore.setLoading(true)
-        // const formData: FormData = new FormData()
-        // formData.append('username', this.userName)
-        //formData.append('password', this.password)
         // запрос на стандартную конечную точку /login
         // Spring Security Web API
         // с передачей имени и пароля пользователя для входа в учетную запись
@@ -54,34 +89,7 @@ class UserStore {
         }).then((statusCode) => {
             // если в объекте отклика код статуса равен 200
             if (statusCode == this.httpStatusOk) {
-                // запрос на конечную точку рест-контроллера аутентификации
-                // для проверки наличия веб-сеанса
-                // и для получения сведений о текущем пользователе
-                fetch('api/auth/user/check', {
-                    method: 'GET'
-                }).then((response) => {
-                    // из полученного отклика сервера извлечь тело - json-string,
-                    // преобразовать в json-object
-                    // и передать для дальнейшей обработки
-                    return response.json()
-                }).then((response) => {
-                    // если объект отклика сервера получен
-                    if (response) {
-                        if (response.status === 'success') {
-                            if (response.data) {
-                                this.user = new User(response.data.name, response.data.roleName)
-                            }
-                        } else if (response.status === 'fail') {
-                            // установка в переменную хранилища сообщения об ошибке
-                            commonStore.setError(response.message)
-                        }
-                    }
-                }).catch((error) => {
-                    // установка в переменную хранилища сообщения об ошибке
-                    commonStore.setError(error.message)
-                    // перевыброс объекта аргументов исключения
-                    throw error
-                })
+                this.check()
             }
         }).catch((error) => {
             // установка в переменную хранилища сообщения об ошибке
