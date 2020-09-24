@@ -7,10 +7,11 @@ import {
     CardContent,
     CardMedia, Checkbox, Drawer, FormControl, FormControlLabel, FormGroup,
     Grid,
-    Icon, InputLabel, MenuItem, Select, TextField,
+    Icon, InputLabel, MenuItem, Select, Snackbar, TextField,
     Typography, withStyles,
     WithStyles
 } from "@material-ui/core"
+import Alert from '@material-ui/lab/Alert'
 import {inject, observer} from "mobx-react"
 import {CommonStore} from "../../stores/CommonStore"
 import {ProductStore} from "../../stores/ProductStore"
@@ -124,10 +125,17 @@ class Shopping extends Component<IProps, IState> {
         this.props.cartStore.addToCart(productId, () => {
             this.setState({snackBarText: 'One item added to Your cart'})
             this.setState({snackBarVisibility: true})
-            setTimeout(() => {
+            /*setTimeout(() => {
                 this.setState({snackBarVisibility: false})
-            }, 6000)
+            }, 6000)*/
         })
+    }
+
+    handleSnackBarClose = (event?: React.SyntheticEvent, reason?: string) => {
+        if (reason === 'clickaway') {
+            return;
+        }
+        this.setState({snackBarVisibility: false})
     }
 
     render () {
@@ -282,6 +290,13 @@ class Shopping extends Component<IProps, IState> {
 
                 })}
             </Grid>
+            <Snackbar
+                open={this.state.snackBarVisibility}
+                autoHideDuration={6000} onClose={this.handleSnackBarClose}>
+                <Alert onClose={this.handleSnackBarClose} severity="success">
+                    {this.state.snackBarText}
+                </Alert>
+            </Snackbar>
         </div>
     }
 }

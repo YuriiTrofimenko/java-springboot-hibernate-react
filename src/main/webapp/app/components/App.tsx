@@ -63,6 +63,7 @@ const styles = theme =>
             backgroundColor: '#ee6e73',
         },
         modal: {
+            display: 'flex',
             alignItems: 'center',
             justifyContent: 'center'
         },
@@ -233,9 +234,9 @@ class App extends Component<IProps, IState> {
                                                     <td scope="row">{item.name}</td>
                                                     <td>{item.price}</td>
                                                     <td>{item.quantity}</td>
-                                                    <td>{item.price * item.quantity}</td>
+                                                    <td>{(item.price * item.quantity).toFixed(2)}</td>
                                                     <td>
-                                                        <Grid container>
+                                                        <Grid container spacing={1}>
                                                             <Grid item xs={3} >
                                                                 <Button
                                                                     onClick={(e) => {
