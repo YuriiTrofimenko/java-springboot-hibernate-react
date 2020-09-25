@@ -65,7 +65,10 @@ class UserStore {
             commonStore.setError(error.message)
             // перевыброс объекта аргументов исключения
             throw error
-        })
+        }).finally(action(() => {
+            // отключение анимации ожидания
+            commonStore.setLoading(false)
+        }))
     }
 
     @action login () {

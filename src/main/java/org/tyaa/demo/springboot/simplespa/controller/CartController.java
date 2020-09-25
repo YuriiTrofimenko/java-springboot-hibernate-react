@@ -8,8 +8,10 @@ import org.tyaa.demo.springboot.simplespa.model.Cart;
 import org.tyaa.demo.springboot.simplespa.model.CartItem;
 import org.tyaa.demo.springboot.simplespa.model.ResponseModel;
 import org.tyaa.demo.springboot.simplespa.service.CartService;
+import org.tyaa.demo.springboot.simplespa.service.PaymentService;
 
 import javax.servlet.http.HttpSession;
+import java.io.IOException;
 
 @RestController
 @RequestMapping("/api/cart")
@@ -17,6 +19,9 @@ public class CartController {
 
     @Autowired
     private CartService productService;
+
+    @Autowired
+    private PaymentService paymentService;
 
     // внедрение объекта сеанса http через аргумент метода
     @GetMapping("")
@@ -79,5 +84,14 @@ public class CartController {
             );
         httpSession.setAttribute("CART", cart);
         return new ResponseEntity<>(response, HttpStatus.OK);
+    }
+
+    @GetMapping("/purchase")
+    public ResponseEntity<ResponseModel> purchase(HttpSession httpSession) throws IOException {
+        Cart cart = (Cart) httpSession.getAttribute("CART");
+        if (cart == null) {
+            cart = new Cart();
+        }
+        return new ResponseEntity<>(paymentService.purchase(cart), HttpStatus.OK);
     }
 }

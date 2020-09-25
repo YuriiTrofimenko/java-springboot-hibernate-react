@@ -156,6 +156,13 @@ class App extends Component<IProps, IState> {
         this.props.cartStore.setCartVisibility(false)
     }
 
+    handlePurchase = (e) => {
+        this.props.cartStore.getPurchaseButton(htmlText => {
+            console.log(htmlText)
+            document.getElementById('purchaseFrame').innerHTML = htmlText
+        })
+    }
+
     render () {
         const { routes } = this.props.routerStore
         // получаем через пропс из обертки withStyles(styles) весь набор классов стилей,
@@ -271,6 +278,14 @@ class App extends Component<IProps, IState> {
                             ) : (
                                 <span>Your cart is empty</span>
                             )}
+                            <div id='purchaseFrame'>
+                                <Button
+                                    size="small"
+                                    color="primary"
+                                    onClick={this.handlePurchase}>
+                                    Purchase
+                                </Button>
+                            </div>
                         </div>
                     </div>
                 </Modal>
