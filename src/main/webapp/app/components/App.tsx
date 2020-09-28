@@ -3,7 +3,7 @@ import './style.css'
 import {
     Router,
     Route,
-    NavLink
+    Redirect
 } from 'react-router-dom'
 import { CSSTransition } from 'react-transition-group'
 import {inject, observer} from 'mobx-react'
@@ -14,20 +14,26 @@ import {
     Container, Grid,
     Icon,
     IconButton,
-    Modal,
+    Modal, Snackbar,
     Toolbar,
     Typography,
     WithStyles,
     withStyles
 } from '@material-ui/core'
-import MenuIcon from '@material-ui/icons/Menu'
+import { RouteComponentProps } from 'react-router-dom'
 import {UserStore} from '../stores/UserStore'
 import {RouterStore} from '../stores/RouterStore'
 import AppBarCollapse from "../components/common/AppBarCollapse"
 import {CommonStore} from "../stores/CommonStore"
 import {CartStore} from "../stores/CartStore"
+import Alert, {Color} from "@material-ui/lab/Alert"
 
-interface IProps extends WithStyles<typeof styles> {
+interface MatchParams {
+    payment_success: string,
+    payment_cancel: string
+}
+
+interface IProps extends WithStyles<typeof styles>, RouteComponentProps<MatchParams> {
     routerStore: RouterStore,
     userStore: UserStore,
     commonStore: CommonStore,
@@ -35,6 +41,9 @@ interface IProps extends WithStyles<typeof styles> {
 }
 
 interface IState {
+    snackBarVisibility: boolean,
+    snackBarText: string,
+    snackBarSeverity: Color
 }
 
 // получаем готовые стили темы material-ui
@@ -79,11 +88,6 @@ const styles = theme =>
             padding: theme.spacing(2, 4, 3),
         },
         cartModalContent: {
-            /* position: 'absolute',
-            top: `40%`,
-            left: `40%`, */
-            /* alignItems: 'center',
-            justifyContent: 'center', */
             backgroundColor: theme.palette.background.paper,
             border: '2px solid #000',
             boxShadow: theme.shadows[5],
@@ -101,8 +105,26 @@ const styles = theme =>
 @observer
 class App extends Component<IProps, IState> {
 
+    constructor(props) {
+        super(props)
+        this.state = {
+            snackBarVisibility: false,
+            snackBarText: '',
+            snackBarSeverity: 'success'
+        }
+    }
+
     componentDidMount() {
         this.props.userStore.check()
+        if (this.props.match && this.props.match.params.payment_success) {
+            this.setState({snackBarText: 'Payment successful'})
+            this.setState({snackBarSeverity: 'success'})
+            this.setState({snackBarVisibility: true})
+        } else if (this.props.match && this.props.match.params.payment_cancel) {
+            this.setState({snackBarText: 'Payment canceled'})
+            this.setState({snackBarSeverity: 'info'})
+            this.setState({snackBarVisibility: true})
+        }
     }
 
     // установка обработчика события изменения значения
@@ -156,11 +178,12 @@ class App extends Component<IProps, IState> {
         this.props.cartStore.setCartVisibility(false)
     }
 
-    handlePurchase = (e) => {
-        this.props.cartStore.getPurchaseButton(htmlText => {
-            console.log(htmlText)
-            document.getElementById('purchaseFrame').innerHTML = htmlText
-        })
+    handleSnackBarClose = (event?: React.SyntheticEvent, reason?: string) => {
+        if (reason === 'clickaway') {
+            return;
+        }
+        this.setState({snackBarVisibility: false})
+        this.setState({snackBarSeverity: 'success'})
     }
 
     render () {
@@ -278,17 +301,17 @@ class App extends Component<IProps, IState> {
                             ) : (
                                 <span>Your cart is empty</span>
                             )}
-                            <div id='purchaseFrame'>
-                                <Button
-                                    size="small"
-                                    color="primary"
-                                    onClick={this.handlePurchase}>
-                                    Purchase
-                                </Button>
-                            </div>
+                            <a href="/simplespa/api/cart/pay">Purchase</a>
                         </div>
                     </div>
                 </Modal>
+                <Snackbar
+                    open={this.state.snackBarVisibility}
+                    autoHideDuration={6000} onClose={this.handleSnackBarClose}>
+                    <Alert onClose={this.handleSnackBarClose} severity={this.state.snackBarSeverity}>
+                        {this.state.snackBarText}
+                    </Alert>
+                </Snackbar>
             </div>
         </Router>
     }

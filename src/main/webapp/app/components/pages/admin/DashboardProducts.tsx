@@ -14,10 +14,11 @@ import {
     withStyles,
     WithStyles
 } from "@material-ui/core";
-import {CommonStore} from "../../../stores/CommonStore";
-import {ProductStore} from "../../../stores/ProductStore";
-import {CategoryStore} from "../../../stores/CategoryStore";
-import history from "app/history";
+import {CommonStore} from "../../../stores/CommonStore"
+import {ProductStore} from "../../../stores/ProductStore"
+import {CategoryStore} from "../../../stores/CategoryStore"
+// import history from "app/history"
+import { ValidatorForm, TextValidator, SelectValidator} from 'react-material-ui-form-validator'
 
 interface IProps extends WithStyles<typeof styles> {
     commonStore: CommonStore,
@@ -55,6 +56,13 @@ const styles = theme =>
         },
         imageTextField: {
             display: 'none'
+        },
+        errorBlock: {
+            right: 0,
+            fontSize: '12px',
+            color: 'red300',
+            position: 'absolute',
+            marginTop: '-25px',
         }
     })
 
@@ -69,6 +77,8 @@ class DashboardProducts extends Component<IProps, IState> {
             sidePanelVisibility: false
         }
     }
+
+    titleRef = React.createRef()
 
     componentDidMount() {
         this.props.categoryStore.fetchCategories()
@@ -144,6 +154,12 @@ class DashboardProducts extends Component<IProps, IState> {
         this.props.productStore.deleteProduct()
     }
 
+    handleBlur = (e) => {
+        console.log(e.target.name + 'Ref')
+        console.log(this[e.target.name + 'Ref'].current)
+        this[e.target.name + 'Ref'].current.validate(e.target.value)
+    }
+
     handleSubmitForm = e => {
         // предотвращаем отправку данных формы на сервер браузером
         // и перезагрузку страницы
@@ -195,28 +211,42 @@ class DashboardProducts extends Component<IProps, IState> {
             </Button>
             <Drawer
                 open={ this.state.sidePanelVisibility } onClose={this.toggleDrawer(false)}>
-                <form className={classes.form}>
-                    <FormControl className={classes.formControl}>
-                        <TextField
-                            id="title"
+                <ValidatorForm
+                    className={classes.form}
+                    onSubmit={this.handleSubmitForm}
+                    onError={errors => console.log(errors)}
+                    ref='form'
+                >
+                    <FormControl
+                        className={classes.formControl}
+                    >
+                        <TextValidator
+                            id='title'
+                            name='title'
                             label={'product title'}
                             value={this.props.productStore.currentProduct.title}
                             onChange={this.handleProductTitleChange}
+                            validators={['required']}
+                            errorMessages={['title is required']}
+                            onBlur={this.handleBlur}
+                            ref={this.titleRef}
                         />
                     </FormControl>
                     <FormControl className={classes.formControl}>
                         <InputLabel id="category-label">category</InputLabel>
-                        <Select
+                        <SelectValidator
                             id="category"
                             labelId='category-label'
                             value={this.props.productStore.currentProduct.categoryId}
                             onChange={this.handleProductCategoryChange}
+                            validators={['required']}
+                            errorMessages={['category is required']}
                         >
                             {categories.map(category => {
                             return (
                                 <MenuItem value={category.id}>{category.name}</MenuItem>
                             )})}
-                        </Select>
+                        </SelectValidator>
                     </FormControl>
                     <FormControl className={classes.formControl}>
                         <TextField
@@ -272,7 +302,7 @@ class DashboardProducts extends Component<IProps, IState> {
                         <Button
                             variant='outlined'
                             disabled={loading}
-                            onClick={this.handleSubmitForm}
+                            type='submit'
                         >
                             Submit
                             <Icon>
@@ -280,7 +310,7 @@ class DashboardProducts extends Component<IProps, IState> {
                             </Icon>
                         </Button>
                     </FormControl>
-                </form>
+                </ValidatorForm>
             </Drawer>
             <Table>
                 <thead>

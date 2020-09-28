@@ -38,13 +38,9 @@ public class CartService {
                         .stream()
                         .filter((item) -> item.getProductId().equals(productId))
                         .findFirst();
-        System.out.println(productId);
-        System.out.println(currentCartItemOptional);
-        System.out.println(currentCartItemOptional.isPresent());
         // если в корзине уже был хотя бы один такой товар
         if (currentCartItemOptional.isPresent()) {
             currentCartItem = currentCartItemOptional.get();
-            System.out.println(currentCartItem);
         } else {
             // если нет - добавляем товар в корзину с указанием его количества равным 0
             currentCartItem =
@@ -60,9 +56,7 @@ public class CartService {
             switch (action) {
                 case ADD:
                     // увеличение числа товара в корзтине на 1
-                    System.out.println(currentCartItem.getQuantity());
                     currentCartItem.setQuantity(currentCartItem.getQuantity() + 1);
-                    System.out.println(currentCartItem.getQuantity());
                     break;
                 case SUB:
                     // уменьшение числа товара в корзтине на 1,

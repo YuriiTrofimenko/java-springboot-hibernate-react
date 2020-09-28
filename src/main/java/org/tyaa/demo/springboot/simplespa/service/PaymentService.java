@@ -1,115 +1,87 @@
 package org.tyaa.demo.springboot.simplespa.service;
 
-import org.apache.commons.codec.digest.DigestUtils;
+import com.paypal.api.payments.*;
+import com.paypal.base.rest.APIContext;
+import com.paypal.base.rest.PayPalRESTException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.tyaa.demo.springboot.simplespa.dao.PaymentHibernateDAO;
-import org.tyaa.demo.springboot.simplespa.entity.Payment;
 import org.tyaa.demo.springboot.simplespa.model.Cart;
-import org.tyaa.demo.springboot.simplespa.model.PaymentModel;
-import org.tyaa.demo.springboot.simplespa.model.PaymentResponseModel;
 import org.tyaa.demo.springboot.simplespa.model.ResponseModel;
 
 import javax.transaction.Transactional;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.net.HttpURLConnection;
-import java.net.URL;
-import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 @Transactional
 public class PaymentService {
 
     @Autowired
+    private APIContext apiContext;
+
+    @Autowired
     private PaymentHibernateDAO dao;
 
-    public PaymentResponseModel pay(Payment payment) {
-        dao.save(payment);
-        PaymentResponseModel response =
-                PaymentResponseModel.builder()
-                .status("success")
-                .message("Payment successfull with amount : " + payment.getAmount())
-                .build();
-        return response;
-    }
+    public Payment createPayment(
+            Cart cart,
+            String currency,
+            String method,
+            String intent,
+            String description,
+            String cancelUrl,
+            String successUrl) throws PayPalRESTException {
+        Amount amount = new Amount();
+        amount.setCurrency(currency);
 
-    public PaymentResponseModel getTx(String vendor) {
-        List<Payment> payments = dao.findByVendor(vendor);
-        List<PaymentModel> paymentModels = payments.stream().map((p) ->
-            PaymentModel.builder()
-                .id(p.getId())
-                .transactionId(p.getTransactionId())
-                .vendor(p.getVendor())
-                .paymentDateString((new SimpleDateFormat("dd/mm/yyyy HH:mm:ss a")).format(p.getPaymentDate()))
-                .amount(p.getAmount())
-                .build()
-        ).collect(Collectors.toList());
-        return PaymentResponseModel.builder()
-            .status("success")
-            .payments(paymentModels)
-            .build();
-    }
-
-    public ResponseModel purchase(Cart cart) throws IOException {
         final Double totalPrice =
-                BigDecimal.valueOf(
-                        cart.getCartItems().stream()
-                                .map(cartItem -> cartItem.getPrice().doubleValue() * cartItem.getQuantity())
-                                .reduce(0d, (previousValue, currentValue) -> previousValue + currentValue)
-                )
-                        .setScale(2, RoundingMode.HALF_UP)
-                        .doubleValue();
-        final String merchantLogin = "demo";
-        final String merchantPassword = "password_1";
-        final String url =
-                "https://auth.robokassa.ru/Merchant/PaymentForm/FormFLS.js" +
-                        "?MerchantLogin="+ merchantLogin +
-                        "&Pass1="+ merchantPassword +
-                        "&OutSum="+ totalPrice +
-                        "&InvId=0" +
-                        // "&IncCurrLabel=" +
-                        "&Description=ROBOKASSADemo" +
-                        "&SignatureValue="+ DigestUtils.md5Hex(merchantLogin + ":" + totalPrice + ":0:"+merchantPassword+":Shp_item=1") +
-                        "&Shp_item=1" +
-                        "&Culture=en" +
-                        "&Encoding=utf-8" +
-                        "&IsTest=1";
-        System.out.println(url);
-        String purchaseButton =
-            getUrlBytes(url)
-                .replace("document.write(\"", "")
-                .replace("\");", "");
-        System.out.println(purchaseButton);
-        return ResponseModel.builder()
-                .status(ResponseModel.SUCCESS_STATUS)
-                .data(purchaseButton)
-                .build();
+            BigDecimal.valueOf(
+                cart.getCartItems().stream()
+                    .map(cartItem -> cartItem.getPrice().doubleValue() * cartItem.getQuantity())
+                    .reduce(0d, (previousValue, currentValue) -> previousValue + currentValue)
+            ).setScale(2, RoundingMode.HALF_UP).doubleValue();
+        amount.setTotal(String.format("%.2f", totalPrice));
+
+        Transaction transaction = new Transaction();
+        transaction.setDescription(description);
+        transaction.setAmount(amount);
+
+        List<Transaction> transactions = new ArrayList<>();
+        transactions.add(transaction);
+
+        Payer payer = new Payer();
+        payer.setPaymentMethod(method);
+
+        Payment payment = new Payment();
+        payment.setIntent(intent);
+        payment.setPayer(payer);
+        payment.setTransactions(transactions);
+        RedirectUrls redirectUrls = new RedirectUrls();
+        redirectUrls.setCancelUrl(cancelUrl);
+        redirectUrls.setReturnUrl(successUrl);
+        payment.setRedirectUrls(redirectUrls);
+
+        return payment.create(apiContext);
     }
 
-    private String getUrlBytes(String urlSpec) throws IOException {
-        URL url = new URL(urlSpec);
-        HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-        try {
-            ByteArrayOutputStream out = new ByteArrayOutputStream();
-            InputStream in = connection.getInputStream();
-            if (connection.getResponseCode() != HttpURLConnection.HTTP_OK)
-            {
-                return null;
-            }
-            int bytesRead = 0;
-            byte[] buffer = new byte[1024];
-            while ((bytesRead = in.read(buffer)) > 0)
-                out.write(buffer, 0, bytesRead);
-            out.close();
-            return new String(out.toByteArray());
-        } finally {
-            connection.disconnect();
+    public ResponseModel executePayment(String paymentId, String payerId) throws PayPalRESTException{
+        Payment payment = new Payment();
+        payment.setId(paymentId);
+        PaymentExecution paymentExecute = new PaymentExecution();
+        paymentExecute.setPayerId(payerId);
+        payment = payment.execute(apiContext, paymentExecute);
+        if (payment.getState().equals("approved")) {
+            return ResponseModel.builder()
+                    .status("success")
+                    .message("Payment successful with id: " + payment.getId())
+                    .build();
+        } else {
+            return ResponseModel.builder()
+                    .status("success")
+                    .message("Payment fail with message: " + payment.getFailureReason())
+                .build();
         }
     }
 }

@@ -12,6 +12,7 @@
     "react": "^16.13.1",
     "react-dom": "^16.13.1",
     "react-image-file-resizer": "^0.3.7",
+    "react-material-ui-form-validator": "^2.1.1",
     "react-router-dom": "^5.2.0",
     "react-transition-group": "^4.4.1",
     "ts-md5": "^1.2.7"

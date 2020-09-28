@@ -1,9 +1,6 @@
 import {action, computed, observable} from 'mobx'
-import Product from '../models/ProductModel'
 import commonStore from './CommonStore'
-import Category from "app/models/CategoryModel"
 import CartItemModel from "app/models/CartItemModel"
-import {Md5} from 'ts-md5/dist/md5'
 
 class CartStore {
 
@@ -86,33 +83,18 @@ class CartStore {
     @action getPurchaseButton(givePurchaseButtonHtml: (htmlText: string) => void) {
         commonStore.clearError()
         commonStore.setLoading(true)
-        /* const merchantLogin: string = 'demo'
-        const merchantPassword: string = 'password_1'
-        const url = `https://auth.robokassa.ru/Merchant/PaymentForm/FormFLS.js
-                        ?MerchantLogin=${merchantLogin}
-                        &Pass1=${merchantPassword}
-                        &OutSum=${this.cartItemsTotalPrice}
-                        &InvId=0
-                        &IncCurrLabel=""
-                        &Description=ROBOKASSA Demo
-                        &SignatureValue=${Md5.hashStr(`${merchantLogin}:${this.cartItemsTotalPrice}:0:${merchantPassword}:Shp_item=1`)}
-                        &Shp_item=1
-                        &Culture=en
-                        &Encoding=utf-8
-                        &IsTest=1` */
-        /* url.replace(/\s/g,'') */
-        fetch("/simplespa/api/cart/purchase",{
-            method: 'GET'/* ,
-            mode: 'no-cors' */
+        fetch("/simplespa/api/cart/pay",{
+            method: 'GET',
+            mode: 'no-cors'
         }).then((response) => {
             /* const text = response.text()
             console.log(text)
             text.then(text2 => console.log(text2)) */
-            return response.json()
+            return response.text()
         }).then(response => {
             if (response) {
-                givePurchaseButtonHtml(response.data)
-                // givePurchaseButtonHtml(responseBody.replace('document.write("', '').replace('");', ''))
+                console.log(response)
+                givePurchaseButtonHtml(response)
             }
         }).catch((error) => {
             commonStore.setError(error.message)
