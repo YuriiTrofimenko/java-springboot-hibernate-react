@@ -273,6 +273,8 @@ class DashboardProducts extends Component<IProps, IState> {
                             label={'price'}
                             value={this.props.productStore.currentProduct.price}
                             onChange={this.handleProductPriceChange}
+                            required
+                            inputProps={{pattern: '[0-9]*[.]?[0-9]+'}}
                         />
                     </FormControl>
                     <FormControl className={classes.formControl}>

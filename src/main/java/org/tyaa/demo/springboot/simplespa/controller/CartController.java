@@ -95,6 +95,7 @@ public class CartController {
         return new ResponseEntity<>(response, HttpStatus.OK);
     }
 
+    // этот метод нужно вызвать с фронтенда синхронно
     @GetMapping("/pay")
     public String payment(HttpSession httpSession, HttpServletResponse response) throws PayPalRESTException, IOException {
         Cart cart = (Cart) httpSession.getAttribute("CART");
@@ -112,26 +113,38 @@ public class CartController {
             "http://localhost:8090/simplespa/api/cart/pay/success"
             );
         for(Links link : payment.getLinks()) {
+            // после того, как пользователь сделал выбор на странице агрегатора,
+            // в объект payment агрегатор помещает ответ -
+            // одну из двух гиперссылок, заданных ему выше
             if(link.getRel().equals("approval_url")) {
                 // response.sendRedirect(link.getHref());
+                // в зависимости от того, отменил или подтвердил пользователь оплату,
+                // выполняем перенаправление на один из двух ресурсов
                 return "redirect:" + link.getHref();
             }
         }
         return "redirect:/";
     }
 
+    // вызывается перенаправлением из действия payment
+    // после того, как получена одна из гиперссылок в ответ на отмену или
+    // подтвреждение оплаты,
+    // при этом параметры предоставляются агрегатором
     @GetMapping("/pay/success")
     public String successPay(
             @RequestParam("paymentId") String paymentId,
             @RequestParam("PayerID") String payerId,
             HttpSession httpSession
     ) throws PayPalRESTException {
+        // завершение платежа
         paymentService.executePayment(paymentId, payerId);
         Cart cart = (Cart) httpSession.getAttribute("CART");
         if (cart == null) {
             cart = new Cart();
         }
         cart.getCartItems().clear();
+        // возврат перенаправления вместо имени представления -
+        // на страницу, сообщающую об успешном завершении оплаты
         return "redirect:/payment:success";
     }
 

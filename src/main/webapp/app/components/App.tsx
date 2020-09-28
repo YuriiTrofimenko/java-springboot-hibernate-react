@@ -301,6 +301,9 @@ class App extends Component<IProps, IState> {
                             ) : (
                                 <span>Your cart is empty</span>
                             )}
+                            {/* Обычная html-гиперссылка для того, чтобы запрос на сервер
+                             был выполнен синхронно, и ответ (перенаправление) ожидал не
+                              код фронтенда (функция fetch), а сам браузер */}
                             <a href="/simplespa/api/cart/pay">Purchase</a>
                         </div>
                     </div>
