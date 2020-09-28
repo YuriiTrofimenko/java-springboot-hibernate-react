@@ -17,8 +17,7 @@ import {
 import {CommonStore} from "../../../stores/CommonStore"
 import {ProductStore} from "../../../stores/ProductStore"
 import {CategoryStore} from "../../../stores/CategoryStore"
-// import history from "app/history"
-import { ValidatorForm, TextValidator, SelectValidator} from 'react-material-ui-form-validator'
+import { ValidatorForm, TextValidator} from 'react-material-ui-form-validator'
 
 interface IProps extends WithStyles<typeof styles> {
     commonStore: CommonStore,
@@ -111,6 +110,7 @@ class DashboardProducts extends Component<IProps, IState> {
 
     handleProductCategoryChange = e => {
         this.props.productStore.setProductCategory(e.target.value)
+        document.getElementById('productCategoryValidator').setAttribute('value', e.target.value)
     }
 
     handleProductPriceChange = e => {
@@ -140,12 +140,11 @@ class DashboardProducts extends Component<IProps, IState> {
     }
 
     handleProductEdit = (e, productId) => {
+        this.props.productStore.setCurrentProductId(productId)
         this.setState({formMode: 'edit'})
         this.setState({sidePanelVisibility: true})
-        console.log(productId)
         const currentProduct =
             this.props.productStore.products.find(p => p.id === productId)
-        console.log(currentProduct)
         this.props.productStore.setCurrentProduct(currentProduct)
     }
 
@@ -220,37 +219,49 @@ class DashboardProducts extends Component<IProps, IState> {
                     <FormControl
                         className={classes.formControl}
                     >
-                        <TextValidator
+                        <TextField
                             id='title'
                             name='title'
                             label={'product title'}
                             value={this.props.productStore.currentProduct.title}
                             onChange={this.handleProductTitleChange}
-                            validators={['required']}
+                            required
+                            /*validators={['required']}
                             errorMessages={['title is required']}
                             onBlur={this.handleBlur}
-                            ref={this.titleRef}
+                            ref={this.titleRef}*/
                         />
                     </FormControl>
                     <FormControl className={classes.formControl}>
                         <InputLabel id="category-label">category</InputLabel>
-                        <SelectValidator
+                        <Select
                             id="category"
                             labelId='category-label'
                             value={this.props.productStore.currentProduct.categoryId}
                             onChange={this.handleProductCategoryChange}
-                            validators={['required']}
-                            errorMessages={['category is required']}
                         >
                             {categories.map(category => {
+                                // console.log(category.id, this.props.productStore.currentProduct.categoryId)
                             return (
-                                <MenuItem value={category.id}>{category.name}</MenuItem>
+                                <MenuItem
+                                    value={category.id.toString()}
+                                    /*selected={category.id === this.props.productStore.currentProduct.categoryId}*/>
+                                    {category.name}
+                                </MenuItem>
                             )})}
-                        </SelectValidator>
+                        </Select>
+                        <input
+                            id='productCategoryValidator'
+                            tabIndex={-1}
+                            autoComplete="off"
+                            style={{ opacity: 0, height: 0 }}
+                            value={this.props.productStore.currentProduct.categoryId?.toString()}
+                            required={true}
+                        />
                     </FormControl>
                     <FormControl className={classes.formControl}>
                         <TextField
-                            id="description"
+                            id='description'
                             label={'description'}
                             value={this.props.productStore.currentProduct.description}
                             onChange={this.handleProductDescriptionChange}

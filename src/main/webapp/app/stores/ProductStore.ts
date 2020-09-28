@@ -38,7 +38,7 @@ class ProductStore {
         this.currentProduct.title = title
     }
 
-    @action setProductCategory(categoryId: number) {
+    @action setProductCategory(categoryId: BigInteger) {
         this.currentProduct.categoryId = categoryId
     }
 
@@ -157,6 +157,7 @@ class ProductStore {
                 if (responseStatusCode === this.HTTP_STATUS_CREATED) {
                     this.fetchProducts()
                     this.setCurrentProduct(new Product())
+                    this.setCurrentProductId(null)
                 }
             }
         }).catch((error) => {
@@ -192,6 +193,7 @@ class ProductStore {
                     this.fetchProducts()
                     this.setProductTitle('')
                     this.setCurrentProduct(new Product())
+                    this.setCurrentProductId(null)
                 }
             }
         }).catch((error) => {
@@ -213,6 +215,7 @@ class ProductStore {
             if (responseModel) {
                 if (responseModel.status === 'success') {
                     this.fetchProducts()
+                    this.setCurrentProduct(new Product())
                     this.setCurrentProductId(null)
                 } else if (responseModel.status === 'fail') {
                     commonStore.setError(responseModel.message)

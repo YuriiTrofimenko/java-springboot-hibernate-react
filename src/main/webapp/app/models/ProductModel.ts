@@ -4,7 +4,7 @@ export default class ProductModel {
     public description: string
     public quantity: number
     public price: number
-    public categoryId: number
+    public categoryId: BigInteger
     public image: string
     constructor (id?, title?, description?, quantity?, price?, categoryId?, image?) {
         this.id = id

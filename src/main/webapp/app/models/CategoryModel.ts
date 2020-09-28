@@ -1,5 +1,5 @@
 export default class CategoryModel {
-    public id: number
+    public id: BigInteger
     public name: string
     constructor (id?, name?) {
         this.id = id
