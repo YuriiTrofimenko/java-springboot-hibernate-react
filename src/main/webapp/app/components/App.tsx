@@ -116,6 +116,7 @@ class App extends Component<IProps, IState> {
 
     componentDidMount() {
         this.props.userStore.check()
+        console.log(history)
         if (this.props.match && this.props.match.params.payment_success) {
             this.setState({snackBarText: 'Payment successful'})
             this.setState({snackBarSeverity: 'success'})

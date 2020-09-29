@@ -202,7 +202,7 @@ public class ProductService {
             .build();
     }
 
-    public ResponseModel getProductsPriceBounds() {
+    /* public ResponseModel getProductsPriceBounds() {
         Map<String, Integer> maxndMin = new LinkedHashMap<>();
         maxndMin.put("min", productDao.findAll().stream()
                 .min((p1, p2) -> p1.getPrice().subtract(p2.getPrice())
@@ -215,6 +215,26 @@ public class ProductService {
         return ResponseModel.builder()
                 .status(ResponseModel.SUCCESS_STATUS)
                 .data(maxndMin)
+                .build();
+    } */
+
+    public ResponseModel getProductsPriceBounds() {
+        Map<String, Integer> maxAndMin = new LinkedHashMap<>();
+        maxAndMin.put("min", productDao.findMinimum().intValue());
+        maxAndMin.put("max", productDao.findTop1ByOrderByPriceDesc().getPrice().intValue());
+        return ResponseModel.builder()
+                .status(ResponseModel.SUCCESS_STATUS)
+                .data(maxAndMin)
+                .build();
+    }
+
+    public ResponseModel getProductsQuantityBounds() {
+        Map<String, Integer> maxAndMin = new LinkedHashMap<>();
+        maxAndMin.put("min", productDao.findTop1ByOrderByQuantityAsc().getQuantity());
+        maxAndMin.put("max", productDao.findTop1ByOrderByQuantityDesc().getQuantity());
+        return ResponseModel.builder()
+                .status(ResponseModel.SUCCESS_STATUS)
+                .data(maxAndMin)
                 .build();
     }
 }

@@ -77,6 +77,14 @@ public class ProductController {
         );
     }
 
+    @GetMapping("/products/quantity-bounds")
+    public ResponseEntity<ResponseModel> getProductsQuantityBounds() {
+        return new ResponseEntity<>(
+                service.getProductsQuantityBounds(),
+                HttpStatus.OK
+        );
+    }
+
     @DeleteMapping(value = "/product/{id}")
     public ResponseEntity<ResponseModel> deleteProduct(@PathVariable Long id) {
         ResponseModel responseModel = service.delete(id);

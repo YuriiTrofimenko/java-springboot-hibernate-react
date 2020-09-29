@@ -20,6 +20,12 @@ import {CartStore} from "../../stores/CartStore"
 import {UserStore} from '../../stores/UserStore'
 import ExpandMoreIcon from '@material-ui/icons/ExpandMore'
 
+interface IPreviousSearch {
+    searchString: string,
+    orderBy: string,
+    sortingDirection: string
+}
+
 interface IProps extends WithStyles<typeof styles> {
     commonStore: CommonStore,
     productStore: ProductStore,
@@ -31,7 +37,9 @@ interface IProps extends WithStyles<typeof styles> {
 interface IState {
     sidePanelVisibility: boolean,
     snackBarVisibility: boolean,
-    snackBarText: string
+    snackBarText: string,
+    prevSearch: any,
+    activeOrderButton: string
 }
 
 const styles = theme =>
@@ -62,7 +70,12 @@ const styles = theme =>
                 fontWeight: theme.typography.fontWeightRegular,
             },
         },
-
+        buttonSort: {
+            margin: 1
+        },
+        active: {
+            backgroundColor: '#ccc'
+        }
     })
 
 @inject('commonStore', 'productStore', 'categoryStore', 'cartStore', 'userStore')
@@ -74,20 +87,66 @@ class Shopping extends Component<IProps, IState> {
         this.state = {
             sidePanelVisibility: false,
             snackBarVisibility: false,
-            snackBarText: ''
+            snackBarText: '',
+            prevSearch: {
+                searchString: '',
+                orderBy: '',
+                sortingDirection: ''
+            },
+            activeOrderButton: ''
         }
     }
 
+    // обработчик события жизненного цикла компонента:
+    // компонент примонитирован к виртуальному дереву
     componentDidMount() {
         // сразу после монтирования компонента в виртуальный DOM
-        // просим у локальных хранилищ загрузить
-        // списки моделей товаров и категорий
+        // просим у локального хранилища загрузить
+        // список моделей категорий и границы цен и количств товаров
         this.props.categoryStore.fetchCategories()
-        this.props.productStore.fetchProducts()
-        // TODO когда значения границ в локальном хранилище будут получены с сервера -
-        // скопировать их в свойства хранилища - priceFrom и priceTo
         this.props.productStore.fetchProductPriceBounds()
+        this.props.productStore.fetchProductQuantityBounds()
     }
+
+    // обработчик события жизненного цикла компонента:
+    // компонент получил новые значения свойств
+    componentDidUpdate(prevProps) {
+        // если работа фильтра не выполняется - передаем
+        // параметры из адресной строки в состояние фильра в локальном хранилище
+        console.log('allow = '+ this.props.productStore.allowFetchFilteredProducts)
+        if (this.props.productStore.allowFetchFilteredProducts) {
+            const windowUrl = window.location.search
+            const params = new URLSearchParams(windowUrl)
+            params.forEach((value, key) => console.log(key + " = " + value))
+            console.log(params)
+            const searchString: string = params.get('search') || ''
+            const orderBy = params.get('orderBy') || ''
+            const sortingDirection = params.get('sortingDirection') || ''
+            console.log(searchString, this.state.prevSearch.searchString)
+            console.log(orderBy, this.state.prevSearch.orderBy)
+            console.log(sortingDirection, this.state.prevSearch.sortingDirection)
+            if (searchString != this.state.prevSearch.searchString
+                || orderBy != this.state.prevSearch.orderBy
+                || sortingDirection != this.state.prevSearch.sortingDirection
+            ) {
+                this.setState({prevSearch: {
+                        searchString: searchString,
+                        orderBy: orderBy,
+                        sortingDirection: sortingDirection
+                    }})
+                this.props.productStore.setFilterDataSearchString(searchString)
+                if (orderBy) {
+                    this.props.productStore.setOrderBy(orderBy)
+                }
+                if (sortingDirection) {
+                    this.props.productStore.setSortingDirection(sortingDirection)
+                }
+                this.props.productStore.fetchFilteredProducts()
+                this.props.productStore.setAllowFetchFilteredProducts(false)
+            }
+        }
+    }
+
 
     toggleDrawer = (open: boolean) => (
         event: React.KeyboardEvent | React.MouseEvent,
@@ -119,6 +178,20 @@ class Shopping extends Component<IProps, IState> {
 
     handlePriceToChange = e => {
         this.props.productStore.setFilterDataPriceTo(e.target.value)
+    }
+
+    handleQuantityFromChange = e => {
+        this.props.productStore.setFilterDataQuantityFrom(e.target.value)
+    }
+
+    handleQuantityToChange = e => {
+        this.props.productStore.setFilterDataQuantityTo(e.target.value)
+    }
+
+    handleOrderButtonClick = (e, orderBy, sortingDirection, buttonName) => {
+        this.props.productStore.setOrderBy(orderBy)
+        this.props.productStore.setSortingDirection(sortingDirection)
+        this.setState({ activeOrderButton: buttonName })
     }
 
     handleAddToCart = (e, productId) => {
@@ -226,20 +299,79 @@ class Shopping extends Component<IProps, IState> {
                             </div>
                         </FormGroup>
                     </AccordionDetails>
+                    <AccordionDetails>
+                        <FormGroup row>
+                            <div>
+                                <Typography className={classes.subHeading}>
+                                    Quantity
+                                </Typography>
+                            </div>
+                            <div>
+                                <TextField
+                                    id="quantityFrom"
+                                    label={'from'}
+                                    value={this.props.productStore.quantityFrom}
+                                    onChange={this.handleQuantityFromChange}
+                                />
+                                <TextField
+                                    id="quantityTo"
+                                    label={'to'}
+                                    value={this.props.productStore.quantityTo}
+                                    onChange={this.handleQuantityToChange}
+                                />
+                            </div>
+                        </FormGroup>
+                    </AccordionDetails>
                 </Accordion>
                 <Accordion>
                     <AccordionSummary
-                        expandIcon={<ExpandMoreIcon />}
+                        expandIcon={<ExpandMoreIcon/>}
                         aria-controls="panel2a-content"
                         id="panel2a-header"
                     >
-                        <Typography className={classes.heading}>Accordion 3</Typography>
+                        <Icon>sort</Icon>
+                        <Typography className={classes.heading}>
+                            Sort
+                        </Typography>
                     </AccordionSummary>
                     <AccordionDetails>
-                        <Typography>
-                            Lorem ipsum dolor sit amet, consectetur adipiscing elit. Suspendisse malesuada lacus ex,
-                            sit amet blandit leo lobortis eget.
-                        </Typography>
+                        <Button
+                            className={classes.buttonSort + ' ' + (this.state.activeOrderButton === 'New' ? classes.active : "")}
+                            variant="outlined"
+                            onClick={(e) => {
+                                this.handleOrderButtonClick(e, 'id', 'DESC', 'New')
+                            }}
+                        >
+                            New
+                        </Button>
+                        <Button
+                            className={classes.buttonSort + ' ' + (this.state.activeOrderButton === 'Old' ? classes.active : "")}
+                            variant="outlined"
+                            onClick={(e) => {
+                                this.handleOrderButtonClick(e, 'id', 'ASC', 'Old')
+                            }}
+                        >
+                            Old
+                        </Button>
+
+                        <Button
+                            className={classes.buttonSort + ' ' + (this.state.activeOrderButton === 'Cheep' ? classes.active : "")}
+                            variant="outlined"
+                            onClick={(e) => {
+                                this.handleOrderButtonClick(e, 'price', 'ASC', 'Cheep')
+                            }}
+                        >
+                            Cheep
+                        </Button>
+                        <Button
+                            className={classes.buttonSort + ' ' + (this.state.activeOrderButton === 'Costly' ? classes.active : "")}
+                            variant="outlined"
+                            onClick={(e) => {
+                                this.handleOrderButtonClick(e, 'price', 'DESC', 'Costly')
+                            }}
+                        >
+                            Costly
+                        </Button>
                     </AccordionDetails>
                 </Accordion>
             </Drawer>

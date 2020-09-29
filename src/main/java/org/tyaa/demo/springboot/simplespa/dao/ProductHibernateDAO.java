@@ -51,5 +51,8 @@ public interface ProductHibernateDAO extends JpaRepository<Product, Long>,
 
     Product findTop1ByOrderByPriceDesc ();
 
+    Product findTop1ByOrderByQuantityDesc ();
+    Product findTop1ByOrderByQuantityAsc ();
+
     Integer countProductsByCategory(Category category);
 }
