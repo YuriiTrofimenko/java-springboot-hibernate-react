@@ -1,0 +1,99 @@
+version: "3"
+
+services:
+
+  mysql:
+    container_name: mysql
+    image: mysql:5.7
+    command: --default-authentication-plugin=mysql_native_password
+    ports:
+      - 3307:3306
+    environment:
+      MYSQL_DATABASE: shop
+      MYSQL_ROOT_PASSWORD: root
+    volumes:
+      - ./volumes/database:/var/lib/mysql
+    # restart: always
+    networks:
+      - spring_net
+
+  mongo:
+    container_name: mongo
+    image: mongo:3.2.4
+    ports:
+      - 27018:27017
+    command: --smallfiles # Usually, the first datafile allocated has a size of 64MB.
+    # The next has 128MB. This doubling goes on until 2GB are reached.
+    # After that, every new datafile is allocated with 2GB.
+    # The smallfiles option simply sets the initial size to 16MB, and the doubling starts from there.
+    # restart: always
+    networks:
+      - spring_net
+
+  rabbitmq:
+    container_name: rabbitmq
+    image: rabbitmq:3-management
+    ports:
+      - 5673:5672
+      - 15673:15672
+    networks:
+      - spring_net
+
+  spring-app-shop:
+    container_name: spring-app-shop
+    build:
+      context: ./shop
+      dockerfile: ./Dockerfile
+    volumes:
+      - ~/.m2:/root/.m2
+    ports:
+      - 8090:8080
+#      - 192.168.0.107:8090:8080
+#      - 192.168.0.104:8090:8080
+#    environment:
+#      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/shop?serverTimezone=UTC&useSSL=false&allowPublicKeyRetrieval=true
+#      - SPRING_DATASOURCE_USERNAME=root
+#      - SPRING_DATASOURCE_PASSWORD=root
+#      - SPRING_MONGO_CONNECTION_HOST=mongo
+#      - SPRING_MONGO_CONNECTION_PORT=27017
+#      - SPRING_RABBITMQ_HOST=rabbitmq
+    depends_on:
+      - mysql
+      - mongo
+      - rabbitmq
+    # command: ["./wait-for-it.sh", "mysql:3306", "--", "java", "-jar", "app.jar"]
+    # command: "mvn clean spring-boot:run"
+    # command: ["chmod", "+x", "/usr/local/bin/mvn-entrypoint.sh"]
+    # command: "ls"
+    command: ["./wait-for-it.sh", "mysql:3307", "--", "mvn", "spring-boot:run", "-Dspring-boot.run.profiles=docker", "-X"]
+    # command: ["./shop/wait-for-it.sh", "mysql:3307", "--", "ls"]
+    # restart: always
+    # command: mvn clean spring-boot:run
+    networks:
+      - spring_net
+
+  spring-app-broker:
+    container_name: spring-app-broker
+    build:
+      context: ./broker
+      dockerfile: ./Dockerfile
+    volumes:
+      - ~/.m2:/root/.m2
+    ports:
+      - 8091:8080
+    #environment:
+    #  - MONGOCLIENT_DEFAULT_CONNECTION_URL=mongodb://mongo:27018
+    #  - SPRING_RABBITMQ_HOST=rabbitmq
+    depends_on:
+      - mongo
+      - rabbitmq
+      - spring-app-shop
+    #command: "ls"
+    command: ["./wait-for-it.sh", "spring-app-shop:8090", "--", "mvn", "spring-boot:run", "-X"]
+    # restart: always
+    networks:
+      - spring_net
+
+networks:
+  spring_net:
+    driver: bridge
